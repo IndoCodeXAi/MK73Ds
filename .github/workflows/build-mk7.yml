@@ -1,0 +1,49 @@
+name: Build Mario Kart 7 APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout (dengan submodule)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Cek externals
+        run: |
+          ls externals
+          test -f externals/dynarmic/CMakeLists.txt || (echo "externals/dynarmic kosong - submodule belum ikut ter-upload" && exit 1)
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle 8.13
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Install Android SDK, NDK, CMake
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-31" "build-tools;34.0.0" \
+            "ndk;29.0.14206865" "cmake;3.31.6"
+
+      - name: Build APK
+        working-directory: src/android
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mario-kart-7-apk
+          path: src/android/app/build/outputs/apk/debug/*.apk
