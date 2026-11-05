@@ -342,13 +342,6 @@ public final class CitraDirectory {
                 if (entry.isDirectory()) {
                     continue;
                 }
-                // background glsl
-                if ("background.glsl".equals(entry.getName())) {
-                    ByteArrayOutputStream output = new ByteArrayOutputStream();
-                    copyFile(zipIn, output);
-                    NativeLibrary.SetBackgroundGLSL(output.toString());
-                    continue;
-                }
                 // buttons and background images
                 for (int i = 0; i < inputNames.length; ++i) {
                     if (inputNames[i].equals(entry.getName())) {
