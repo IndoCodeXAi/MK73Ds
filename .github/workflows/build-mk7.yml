@@ -13,33 +13,40 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Folder externals di repo kosong (submodule tidak ikut ter-upload),
-      # jadi kita unduh sendiri dari daftar di .gitmodules.
+      # Folder externals di repo kosong (submodule tidak ikut ter-upload).
+      # Repo asli citra-emu/* sudah dihapus dari GitHub, jadi dialihkan ke mirror.
       - name: Unduh externals
+        env:
+          GIT_TERMINAL_PROMPT: "0"
         run: |
-          set -e
           [ -f .gitmodules ] || { echo ".gitmodules tidak ada"; exit 1; }
-          # yang tidak dipakai build Android dilewati
           SKIP="catch discord-rpc libressl cpp-jwt"
-          git config -f .gitmodules --get-regexp '^submodule\..*\.path$' | awk '{print $2}' | sort -u | while read -r path; do
+          : > /tmp/gagal.txt
+          git config -f .gitmodules --get-regexp '^submodule\..*\.path$' | sort -u -k2,2 | while read -r key path; do
             name=$(basename "$path")
             case " $SKIP " in *" $name "*) echo "lewati $path"; continue;; esac
-            url=$(git config -f .gitmodules --get "submodule.$(git config -f .gitmodules --get-regexp '^submodule\..*\.path$' | awk -v p="$path" '$2==p{print $1; exit}' | sed 's/^submodule\.//; s/\.path$//').url")
-            [ -n "$url" ] || { echo "url kosong untuk $path"; continue; }
-            # hanya isi kalau folder kosong / belum ada file
+            sec=${key#submodule.}; sec=${sec%.path}
+            url=$(git config -f .gitmodules --get "submodule.$sec.url")
+            # alihkan repo citra-emu yang sudah dihapus ke mirror
+            case "$url" in
+              *citra-emu/ext-boost*)      url="https://github.com/azahar-emu/ext-boost.git" ;;
+              *citra-emu/ext-soundtouch*) url="https://codeberg.org/soundtouch/soundtouch.git" ;;
+              *citra-emu/dynarmic*)       url="https://github.com/azahar-emu/dynarmic.git" ;;
+            esac
             if [ -d "$path" ] && [ -n "$(ls -A "$path" 2>/dev/null)" ]; then echo "sudah ada $path"; continue; fi
             rm -rf "$path"; mkdir -p "$(dirname "$path")"
-            case "$name" in
-              fmt) git clone --depth 1 --branch 8.1.1 "$url" "$path" ;;
-              *)   git clone --depth 1 --recurse-submodules --shallow-submodules "$url" "$path" ;;
-            esac
+            echo ">>> $path <- $url"
+            if [ "$name" = fmt ]; then
+              git clone --depth 1 --branch 8.1.1 "$url" "$path" || echo "$path ($url)" >> /tmp/gagal.txt
+            else
+              git clone --depth 1 --recurse-submodules --shallow-submodules "$url" "$path" || echo "$path ($url)" >> /tmp/gagal.txt
+            fi
           done
-          echo "--- hasil externals ---"
+          echo "--- jumlah file per folder ---"
           for d in dynarmic fmt boost teakra soundtouch libyuv enet nihstro cubeb xbyak cryptopp/cryptopp; do
             printf '%s: ' "$d"; ls "externals/$d" 2>/dev/null | wc -l
           done
-          test -f externals/dynarmic/CMakeLists.txt
-          test -f externals/fmt/CMakeLists.txt
+          if [ -s /tmp/gagal.txt ]; then echo "=== GAGAL DIUNDUH ==="; cat /tmp/gagal.txt; exit 1; fi
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
@@ -68,4 +75,3 @@ jobs:
         with:
           name: mario-kart-7-apk
           path: src/android/app/build/outputs/apk/debug/*.apk
-          
