@@ -39,10 +39,21 @@ jobs:
             # versi lama yang cocok dengan kode Citra ini
             case "$name" in
               fmt)     ref="8.1.1" ;;
-              cryptopp) ref="CRYPTOPP_8_2_0" ;;
+              cryptopp) ref="" ;;
               *)       ref="" ;;
             esac
-            if [ -n "$ref" ]; then
+            if [ "$name" = cryptopp ]; then
+              # CMake Citra memakai nama file lama (crc-simd.cpp, pakai tanda hubung).
+              # Mulai 8.2.0 namanya diganti crc_simd.cpp, jadi coba versi yang lebih lama.
+              ok=0
+              for r in CRYPTOPP_8_0_0 CRYPTOPP_7_0_0 CRYPTOPP_6_1_0; do
+                rm -rf "$path"
+                if git clone --depth 1 --branch "$r" "$url" "$path" 2>/dev/null && [ -f "$path/crc-simd.cpp" ]; then
+                  echo "cryptopp dipakai: $r"; ok=1; break
+                fi
+              done
+              [ "$ok" = 1 ] || echo "$path ($url) - tidak ada versi dengan crc-simd.cpp" >> /tmp/gagal.txt
+            elif [ -n "$ref" ]; then
               git clone --depth 1 --branch "$ref" "$url" "$path" || echo "$path ($url)" >> /tmp/gagal.txt
             else
               git clone --depth 1 --recurse-submodules --shallow-submodules "$url" "$path" || echo "$path ($url)" >> /tmp/gagal.txt
