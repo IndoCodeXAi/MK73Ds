@@ -68,3 +68,4 @@ jobs:
         with:
           name: mario-kart-7-apk
           path: src/android/app/build/outputs/apk/debug/*.apk
+          
