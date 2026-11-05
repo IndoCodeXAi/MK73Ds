@@ -4,6 +4,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/CMakeModules)
 include(DownloadExternals)
 include(ExternalProject)
 
+# Kita tidak pernah menjalankan "install". Tanpa ini, dynarmic dan soundtouch
+# versi baru gagal di tahap generate (install(EXPORT) / include path di source dir).
+set(CMAKE_SKIP_INSTALL_RULES ON)
+
 # Catch
 add_library(catch-single-include INTERFACE)
 target_include_directories(catch-single-include INTERFACE catch/single_include)
