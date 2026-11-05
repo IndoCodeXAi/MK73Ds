@@ -36,8 +36,14 @@ jobs:
             if [ -d "$path" ] && [ -n "$(ls -A "$path" 2>/dev/null)" ]; then echo "sudah ada $path"; continue; fi
             rm -rf "$path"; mkdir -p "$(dirname "$path")"
             echo ">>> $path <- $url"
-            if [ "$name" = fmt ]; then
-              git clone --depth 1 --branch 8.1.1 "$url" "$path" || echo "$path ($url)" >> /tmp/gagal.txt
+            # versi lama yang cocok dengan kode Citra ini
+            case "$name" in
+              fmt)     ref="8.1.1" ;;
+              cryptopp) ref="CRYPTOPP_8_2_0" ;;
+              *)       ref="" ;;
+            esac
+            if [ -n "$ref" ]; then
+              git clone --depth 1 --branch "$ref" "$url" "$path" || echo "$path ($url)" >> /tmp/gagal.txt
             else
               git clone --depth 1 --recurse-submodules --shallow-submodules "$url" "$path" || echo "$path ($url)" >> /tmp/gagal.txt
             fi
