@@ -68,7 +68,8 @@ jobs:
 
       - name: Build APK
         working-directory: src/android
-        run: gradle assembleDebug --no-daemon --stacktrace
+        # CI=true membuat CMake Citra membaca nama repo Travis/AppVeyor lalu error
+        run: env -u CI gradle assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

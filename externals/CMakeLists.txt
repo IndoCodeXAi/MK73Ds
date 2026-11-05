@@ -11,6 +11,13 @@ target_include_directories(catch-single-include INTERFACE catch/single_include)
 # Crypto++
 add_subdirectory(cryptopp)
 
+# libfmt (dipindah ke atas, sebelum dynarmic, supaya dynarmic memakai fmt ini
+# dan tidak membuat target "fmt" kedua)
+add_subdirectory(fmt)
+if (NOT TARGET fmt::fmt)
+    add_library(fmt::fmt ALIAS fmt)
+endif()
+
 # Dynarmic
 if (ARCHITECTURE_x86_64 OR ARCHITECTURE_ARM64)
     if (ARCHITECTURE_x86_64)
@@ -19,12 +26,9 @@ if (ARCHITECTURE_x86_64 OR ARCHITECTURE_ARM64)
     endif()
     option(DYNARMIC_TESTS OFF)
     set(DYNARMIC_NO_BUNDLED_FMT ON)
+    set(DYNARMIC_FRONTENDS "A32" CACHE STRING "" FORCE)
     add_subdirectory(dynarmic)
 endif()
-
-# libfmt
-add_subdirectory(fmt)
-add_library(fmt::fmt ALIAS fmt)
 
 # getopt
 if (MSVC)
